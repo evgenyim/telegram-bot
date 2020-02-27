@@ -8,7 +8,7 @@ import com.bot4s.telegram.clients.{FutureSttpClient, ScalajHttpClient}
 import com.bot4s.telegram.future.{Polling, TelegramBot}
 import com.bot4s.telegram.methods.SendMessage
 import com.bot4s.telegram.models.{ChatId, User}
-import com.softwaremill.sttp.SttpBackendOptions
+import com.softwaremill.sttp.{SttpBackend, SttpBackendOptions}
 import com.softwaremill.sttp.okhttp.{OkHttpBackend, OkHttpFutureBackend}
 import slogging.{LogLevel, LoggerConfig, PrintLoggerFactory}
 
@@ -35,7 +35,7 @@ class BotStarter(override val client: RequestHandler[Future]) extends TelegramBo
       reply("users is empty")
     }
     for (user <- users ) {
-      text += ("name: " ++ user.firstName.toString ++ ", ID: " ++ user.id.toString ++ "\n")
+      text += s"name:  ${user.firstName}, ID: ${user.id.toString}\n"
     }
     reply(text).void
   }
@@ -48,7 +48,7 @@ class BotStarter(override val client: RequestHandler[Future]) extends TelegramBo
     if (words.size < 2) {
       reply("Sdohni Tvar").void
     } else {
-      request(SendMessage(ChatId((words(1))), words.drop(2).fold("") {(z, i) => z ++ " " ++ i})).void
+      request(SendMessage(ChatId(words(1)), words.drop(2).fold("") { (z, i) => z ++ " " ++ i})).void
     }
   }
 
@@ -57,11 +57,13 @@ class BotStarter(override val client: RequestHandler[Future]) extends TelegramBo
 object BotStarter {
   def main(args: Array[String]): Unit = {
     implicit val ec: ExecutionContext = ExecutionContext.global
-    implicit val backend = OkHttpFutureBackend(
+    implicit val backend: SttpBackend[Future, Nothing] = OkHttpFutureBackend(
       SttpBackendOptions.Default.socksProxy("ps8yglk.ddns.net", 11999)
     )
 
-    val token = Source.fromFile("src/main/scala/token.txt").mkString
+    val tokenFile = Source.fromFile("src/main/scala/token.txt")
+    val token = tokenFile.mkString
+    tokenFile.close()
 
     val bot = new BotStarter(new FutureSttpClient(token))
     Await.result(bot.run(), Duration.Inf)
