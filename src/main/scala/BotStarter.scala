@@ -6,7 +6,8 @@ import com.bot4s.telegram.api.RequestHandler
 import com.bot4s.telegram.api.declarative.Commands
 import com.bot4s.telegram.clients.{FutureSttpClient, ScalajHttpClient}
 import com.bot4s.telegram.future.{Polling, TelegramBot}
-import com.bot4s.telegram.models.User
+import com.bot4s.telegram.methods.SendMessage
+import com.bot4s.telegram.models.{ChatId, User}
 import com.softwaremill.sttp.SttpBackendOptions
 import com.softwaremill.sttp.okhttp.{OkHttpBackend, OkHttpFutureBackend}
 import slogging.{LogLevel, LoggerConfig, PrintLoggerFactory}
@@ -29,6 +30,18 @@ class BotStarter(override val client: RequestHandler[Future]) extends TelegramBo
 
   onCommand("/users") { implicit msg =>
     reply(users.toString()).void
+  }
+
+  onCommand("/send") { implicit msg =>
+    val text = msg.text match {
+      case Some(x) => x
+    }
+    val words = text.split(" ")
+    if (words.size < 2) {
+      reply("Sdohni Tvar").void
+    } else {
+      request(SendMessage(ChatId((words(1))), words(2))).void
+    }
   }
 
 }
