@@ -14,6 +14,7 @@ import slogging.{LogLevel, LoggerConfig, PrintLoggerFactory}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.io.Source
 
 class BotStarter(override val client: RequestHandler[Future]) extends TelegramBot
   with Polling
@@ -29,7 +30,14 @@ class BotStarter(override val client: RequestHandler[Future]) extends TelegramBo
   }
 
   onCommand("/users") { implicit msg =>
-    reply(users.toString()).void
+    var text = ""
+    if (users.isEmpty) {
+      reply("users is empty")
+    }
+    for (user <- users ) {
+      text += ("name: " ++ user.firstName.toString ++ ", ID: " ++ user.id.toString ++ "\n")
+    }
+    reply(text).void
   }
 
   onCommand("/send") { implicit msg =>
@@ -40,7 +48,7 @@ class BotStarter(override val client: RequestHandler[Future]) extends TelegramBo
     if (words.size < 2) {
       reply("Sdohni Tvar").void
     } else {
-      request(SendMessage(ChatId((words(1))), words(2))).void
+      request(SendMessage(ChatId((words(1))), words.drop(2).fold("") {(z, i) => z ++ " " ++ i})).void
     }
   }
 
@@ -53,7 +61,8 @@ object BotStarter {
       SttpBackendOptions.Default.socksProxy("ps8yglk.ddns.net", 11999)
     )
 
-    val token = ""
+    val token = Source.fromFile("src/main/scala/token.txt").mkString
+
     val bot = new BotStarter(new FutureSttpClient(token))
     Await.result(bot.run(), Duration.Inf)
   }
