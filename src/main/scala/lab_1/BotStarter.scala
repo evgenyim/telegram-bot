@@ -1,22 +1,22 @@
-package bot
+package lab_1
+import lab_2.GalleryBot
 
 import cats.instances.future._
 import cats.syntax.functor._
 import com.bot4s.telegram.api.RequestHandler
 import com.bot4s.telegram.api.declarative.Commands
-import com.bot4s.telegram.clients.{FutureSttpClient, ScalajHttpClient}
+import com.bot4s.telegram.clients.FutureSttpClient
 import com.bot4s.telegram.future.{Polling, TelegramBot}
 import com.bot4s.telegram.methods.SendMessage
 import com.bot4s.telegram.models.{ChatId, User}
+import com.softwaremill.sttp.okhttp.OkHttpFutureBackend
 import com.softwaremill.sttp.{SttpBackend, SttpBackendOptions}
-import com.softwaremill.sttp.okhttp.{OkHttpBackend, OkHttpFutureBackend}
-import slogging.{LogLevel, LoggerConfig, PrintLoggerFactory}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.Source
 
-class BotStarter(override val client: RequestHandler[Future]) extends TelegramBot
+class BotStarter(override val client: RequestHandler[Future])(implicit galleryBot: GalleryBot) extends TelegramBot
   with Polling
   with Commands[Future] {
 
@@ -52,6 +52,14 @@ class BotStarter(override val client: RequestHandler[Future]) extends TelegramBo
     }
   }
 
+  onCommand("/image") { implicit msg =>
+    val text = msg.text match {
+      case Some(x) => x
+    }
+    println(galleryBot.getLink((text)))
+    reply(galleryBot.getLink(text)).void
+  }
+
 }
 
 object BotStarter {
@@ -65,6 +73,7 @@ object BotStarter {
     val token = tokenFile.mkString
     tokenFile.close()
 
+    implicit val galleryBot: GalleryBot = new GalleryBot
     val bot = new BotStarter(new FutureSttpClient(token))
     Await.result(bot.run(), Duration.Inf)
   }
