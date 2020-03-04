@@ -1,6 +1,5 @@
 package lab_1
 import lab_2.GalleryBot
-
 import cats.instances.future._
 import cats.syntax.functor._
 import com.bot4s.telegram.api.RequestHandler
@@ -12,6 +11,7 @@ import com.bot4s.telegram.models.{ChatId, User}
 import com.softwaremill.sttp.okhttp.OkHttpFutureBackend
 import com.softwaremill.sttp.{SttpBackend, SttpBackendOptions}
 
+import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.Source
@@ -20,12 +20,13 @@ class BotStarter(override val client: RequestHandler[Future])(implicit galleryBo
   with Polling
   with Commands[Future] {
 
-  var users: List[User] = List()
+  val users: mutable.MutableList[User] = mutable.MutableList[User]()
+  var messages: List[(String, Int, String)] = List[(String, Int, String)]()
   onCommand("/start") { implicit msg =>
     val user = msg.from match {
       case Some(x) => x
     }
-    users = user :: users
+    users += user
     reply(s"Hi!").void
   }
 
@@ -48,8 +49,19 @@ class BotStarter(override val client: RequestHandler[Future])(implicit galleryBo
     if (words.size < 2) {
       reply("Sdohni Tvar").void
     } else {
-      request(SendMessage(ChatId(words(1)), words.drop(2).fold("") { (z, i) => z ++ " " ++ i})).void
+      val user = msg.from match {
+        case Some(x) => x
+      }
+      messages = (user.firstName, words(1).toInt, words.drop(2).fold("") { (z, i) => z ++ " " ++ i}) :: messages
+      reply("Ok").void
     }
+  }
+
+  onCommand("/check") {implicit msg =>
+    val user = msg.from match {
+      case Some(x) => x
+    }
+    reply(messages.filter(_._2 == user.id.toInt).map(x => s"from ${x._1}: ${x._3}").mkString("\n")).void
   }
 
   onCommand("/image") { implicit msg =>

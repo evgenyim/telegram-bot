@@ -7,6 +7,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import com.softwaremill.sttp._
 import com.softwaremill.sttp.json4s._
+import org.json4s.native.Serialization
 
 case class Response(data: List[Data])
 case class Data(images: List[Images])
@@ -16,7 +17,7 @@ class GalleryBot(implicit
                  backend: SttpBackend[Future, Nothing],
                  ec: ExecutionContext) {
 
-  implicit val serialization =  org.json4s.native.Serialization
+  implicit val serialization: Serialization.type =  org.json4s.native.Serialization
 
   def getLink(searchQuery: String): String = {
     val request = sttp
