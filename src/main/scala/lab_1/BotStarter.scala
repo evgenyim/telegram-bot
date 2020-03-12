@@ -17,6 +17,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.Source
 
 class BotStarter(override val client: RequestHandler[Future])(implicit galleryBot: GalleryBot) extends TelegramBot
+
   with Polling
   with Commands[Future] {
 

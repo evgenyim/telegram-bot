@@ -1,5 +1,13 @@
 # Project exclude paths
 /project/target/
 /target/
+<<<<<<< HEAD
 /.idea
+=======
+/.idea
+<<<<<<< HEAD
 src/main/scala/token.txt
+=======
+token.txt
+>>>>>>> eccf785df34779bf4922a8eaa8e7669f69a25d04
+>>>>>>> 58976627f82a5e63471c1f17b03c7ddee6c8c304
