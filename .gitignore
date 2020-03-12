@@ -1,4 +1,9 @@
 # Project exclude paths
 /project/target/
 /target/
+<<<<<<< HEAD
 /.idea
+=======
+/.idea
+token.txt
+>>>>>>> eccf785df34779bf4922a8eaa8e7669f69a25d04
