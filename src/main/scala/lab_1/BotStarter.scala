@@ -24,9 +24,7 @@ class BotStarter(override val client: RequestHandler[Future])(implicit galleryBo
   val users: mutable.MutableList[User] = mutable.MutableList[User]()
   var messages: List[(String, Int, String)] = List[(String, Int, String)]()
   onCommand("/start") { implicit msg =>
-    val user = msg.from match {
-      case Some(x) => x
-    }
+    val user = msg.from.get
     users += user
     reply(s"Hi!").void
   }
@@ -43,33 +41,24 @@ class BotStarter(override val client: RequestHandler[Future])(implicit galleryBo
   }
 
   onCommand("/send") { implicit msg =>
-    val text = msg.text match {
-      case Some(x) => x
-    }
+    val text = msg.text.get
     val words = text.split(" ")
     if (words.size < 2) {
       reply("Sdohni Tvar").void
     } else {
-      val user = msg.from match {
-        case Some(x) => x
-      }
+      val user = msg.from.get
       messages = (user.firstName, words(1).toInt, words.drop(2).fold("") { (z, i) => z ++ " " ++ i}) :: messages
       reply("Ok").void
     }
   }
 
   onCommand("/check") {implicit msg =>
-    val user = msg.from match {
-      case Some(x) => x
-    }
+    val user = msg.from.get
     reply(messages.filter(_._2 == user.id.toInt).map(x => s"from ${x._1}: ${x._3}").mkString("\n")).void
   }
 
   onCommand("/image") { implicit msg =>
-    val text = msg.text match {
-      case Some(x) => x
-    }
-    println(galleryBot.getLink((text)))
+    val text = msg.text.get
     reply(galleryBot.getLink(text)).void
   }
 
