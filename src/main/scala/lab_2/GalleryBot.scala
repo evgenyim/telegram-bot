@@ -15,25 +15,19 @@ case class Images(link: String)
 
 class GalleryBot(implicit
                  backend: SttpBackend[Future, Nothing],
-                 ec: ExecutionContext) {
+                 ec: ExecutionContext,
+                 serialization: Serialization.type) {
 
-  implicit val serialization: Serialization.type =  org.json4s.native.Serialization
-
-  def getLink(searchQuery: String): String = {
+  def getLink(searchQuery: String): Future[String] = {
     val request = sttp
       .header("Authorization", "Client-ID e99b774b2ac6582")
       .get(uri"https://api.imgur.com/3/gallery/search?q=$searchQuery")
       .response(asJson[Response])
 
-    val res = backend.send(request).map { response =>
+    backend.send(request).map { response =>
       val len = response.unsafeBody.data.size
       response.unsafeBody
         .data(scala.util.Random.nextInt(len)).images.head.link
-    }
-    Await.ready(res, Duration.Inf)
-    res.value match {
-      case Some(x) => x.get
-      case _ => "ERROR"
     }
   }
 

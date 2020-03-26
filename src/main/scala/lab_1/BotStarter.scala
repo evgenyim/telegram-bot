@@ -10,13 +10,14 @@ import com.bot4s.telegram.methods.SendMessage
 import com.bot4s.telegram.models.{ChatId, User}
 import com.softwaremill.sttp.okhttp.OkHttpFutureBackend
 import com.softwaremill.sttp.{SttpBackend, SttpBackendOptions}
+import org.json4s.native.Serialization
 
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.Source
 
-class BotStarter(override val client: RequestHandler[Future])(implicit galleryBot: GalleryBot) extends TelegramBot
+class BotStarter(override val client: RequestHandler[Future], galleryBot: GalleryBot) extends TelegramBot
 
   with Polling
   with Commands[Future] {
@@ -59,7 +60,8 @@ class BotStarter(override val client: RequestHandler[Future])(implicit galleryBo
 
   onCommand("/image") { implicit msg =>
     val text = msg.text.get
-    reply(galleryBot.getLink(text)).void
+    val res = galleryBot.getLink(text)
+    res.flatMap(link => reply(link)).void
   }
 
 }
@@ -70,13 +72,14 @@ object BotStarter {
     implicit val backend: SttpBackend[Future, Nothing] = OkHttpFutureBackend(
       SttpBackendOptions.Default.socksProxy("ps8yglk.ddns.net", 11999)
     )
+    implicit val serialization: Serialization.type = org.json4s.native.Serialization
 
     val tokenFile = Source.fromFile("src/main/scala/token.txt")
     val token = tokenFile.mkString
     tokenFile.close()
 
     implicit val galleryBot: GalleryBot = new GalleryBot
-    val bot = new BotStarter(new FutureSttpClient(token))
+    val bot = new BotStarter(new FutureSttpClient(token), galleryBot)
     Await.result(bot.run(), Duration.Inf)
   }
 }
