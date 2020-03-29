@@ -10,14 +10,16 @@ import com.bot4s.telegram.methods.SendMessage
 import com.bot4s.telegram.models.{ChatId, User}
 import com.softwaremill.sttp.okhttp.OkHttpFutureBackend
 import com.softwaremill.sttp.{SttpBackend, SttpBackendOptions}
+import lab_5.DataBaseServer
 import org.json4s.native.Serialization
 
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.io.Source
+import slick.jdbc.H2Profile.api._
 
-class BotStarter(override val client: RequestHandler[Future], galleryBot: GalleryBot) extends TelegramBot
+class BotStarter(override val client: RequestHandler[Future], galleryBot: GalleryBot, val dbs: DataBaseServer) extends TelegramBot
 
   with Polling
   with Commands[Future] {
@@ -25,8 +27,9 @@ class BotStarter(override val client: RequestHandler[Future], galleryBot: Galler
   val users: mutable.MutableList[User] = mutable.MutableList[User]()
   var messages: List[(String, Int, String)] = List[(String, Int, String)]()
   onCommand("/start") { implicit msg =>
-    val user = msg.from.get
-    users += user
+    dbs.addUser
+//    val user = msg.from.get
+//    users += user
     reply(s"Hi!").void
   }
 
@@ -73,13 +76,15 @@ object BotStarter {
       SttpBackendOptions.Default.socksProxy("ps8yglk.ddns.net", 11999)
     )
     implicit val serialization: Serialization.type = org.json4s.native.Serialization
+    val db = Database.forConfig("h2mem1")
+    try {
+      val tokenFile = Source.fromFile("src/main/scala/token.txt")
+      val token = tokenFile.mkString
+      tokenFile.close()
 
-    val tokenFile = Source.fromFile("src/main/scala/token.txt")
-    val token = tokenFile.mkString
-    tokenFile.close()
-
-    implicit val galleryBot: GalleryBot = new GalleryBot
-    val bot = new BotStarter(new FutureSttpClient(token), galleryBot)
-    Await.result(bot.run(), Duration.Inf)
+      implicit val galleryBot: GalleryBot = new GalleryBot
+      val bot = new BotStarter(new FutureSttpClient(token), galleryBot, new DataBaseServer(db))
+      Await.result(bot.run(), Duration.Inf)
+    } finally db.close
   }
 }
