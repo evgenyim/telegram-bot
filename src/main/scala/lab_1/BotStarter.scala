@@ -28,20 +28,11 @@ class BotStarter(override val client: RequestHandler[Future], galleryBot: Galler
   var messages: List[(String, Int, String)] = List[(String, Int, String)]()
   onCommand("/start") { implicit msg =>
     dbs.addUser
-//    val user = msg.from.get
-//    users += user
     reply(s"Hi!").void
   }
 
   onCommand("/users") { implicit msg =>
-    var text = ""
-    if (users.isEmpty) {
-      reply("users is empty")
-    }
-    for (user <- users ) {
-      text += s"name:  ${user.firstName}, ID: ${user.id.toString}\n"
-    }
-    reply(text).void
+    dbs.users.flatMap(reply(_)).void
   }
 
   onCommand("/send") { implicit msg =>
@@ -51,14 +42,22 @@ class BotStarter(override val client: RequestHandler[Future], galleryBot: Galler
       reply("Sdohni Tvar").void
     } else {
       val user = msg.from.get
-      messages = (user.firstName, words(1).toInt, words.drop(2).fold("") { (z, i) => z ++ " " ++ i}) :: messages
+      dbs.addMessage(msg.from.get, words)
       reply("Ok").void
     }
   }
 
-  onCommand("/check") {implicit msg =>
-    val user = msg.from.get
-    reply(messages.filter(_._2 == user.id.toInt).map(x => s"from ${x._1}: ${x._3}").mkString("\n")).void
+  onCommand("/check") { implicit msg =>
+    val id = msg.from.get.id
+    dbs.getMessages(id).flatMap {
+      messages =>
+        if (messages.isEmpty) {
+          reply("There are no new messages").void
+        } else {
+          messages.foreach(reply(_).void)
+          Future.unit
+        }
+    }
   }
 
   onCommand("/image") { implicit msg =>
@@ -66,8 +65,8 @@ class BotStarter(override val client: RequestHandler[Future], galleryBot: Galler
     val res = galleryBot.getLink(text)
     res.flatMap(link => reply(link)).void
   }
-
 }
+
 
 object BotStarter {
   def main(args: Array[String]): Unit = {
@@ -84,6 +83,7 @@ object BotStarter {
 
       implicit val galleryBot: GalleryBot = new GalleryBot
       val bot = new BotStarter(new FutureSttpClient(token), galleryBot, new DataBaseServer(db))
+      Await.result(bot.dbs.init, Duration.Inf)
       Await.result(bot.run(), Duration.Inf)
     } finally db.close
   }
