@@ -62,8 +62,17 @@ class BotStarter(override val client: RequestHandler[Future], galleryBot: Galler
 
   onCommand("/image") { implicit msg =>
     val text = msg.text.get
-    val res = galleryBot.getLink(text)
+    val res = dbs.getImage(text, msg.from.get)
     res.flatMap(link => reply(link)).void
+  }
+
+  onCommand("/stats") { implicit msg =>
+    val text = msg.text.get
+    if (text.split(" ").length == 1) {
+      dbs.getAllQuerries().flatMap(ans => reply(ans)).void
+    } else {
+      dbs.getStats(text.split(" ")(1)).flatMap(ans => reply(ans.mkString("\n"))).void
+    }
   }
 }
 

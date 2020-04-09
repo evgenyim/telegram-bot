@@ -18,9 +18,10 @@ class GalleryBot(val randomizer: Rand = Randomizer)(implicit
                  ec: ExecutionContext,
                  serialization: Serialization.type) {
   def getLink(searchQuery: String): Future[String] = {
+    val querry = searchQuery.split(" ")(1)
     val request = sttp
       .header("Authorization", "Client-ID e99b774b2ac6582")
-      .get(uri"https://api.imgur.com/3/gallery/search?q=$searchQuery")
+      .get(uri"https://api.imgur.com/3/gallery/search?q=$querry")
       .response(asJson[ImageResponse])
 
     backend.send(request).map { response =>
