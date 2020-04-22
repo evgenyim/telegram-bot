@@ -69,7 +69,7 @@ class BotStarter(override val client: RequestHandler[Future], galleryBot: Galler
   onCommand("/stats") { implicit msg =>
     val text = msg.text.get
     if (text.split(" ").length == 1) {
-      dbs.getAllQuerries().flatMap(ans => reply(ans)).void
+      dbs.getStats(msg.from.get.id.toString).flatMap(ans => reply(ans.mkString("\n"))).void
     } else {
       dbs.getStats(text.split(" ")(1)).flatMap(ans => reply(ans.mkString("\n"))).void
     }

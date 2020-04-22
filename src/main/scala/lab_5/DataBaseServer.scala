@@ -85,10 +85,6 @@ class DataBaseServer (val db: Database)(implicit val ec: ExecutionContext, impli
     Future.successful(catURL)
   }
 
-  def getAllQuerries(): Future[String] = {
-    db.run(querriesBase.result).map(_.map(querry => querry.catURL ++ " " ++ querry.userId.toString).mkString)
-  }
-
   def getStats(nameOrId: String): Future[Option[String]] = {
     val optId = Try(nameOrId.toInt).toOption
     val transaction = for {
